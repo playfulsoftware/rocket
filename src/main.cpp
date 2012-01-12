@@ -17,7 +17,7 @@ class EventSource;
 class EventListener {
     public:
         virtual ~EventListener() {}
-        virtual void onEvent(EventSource& src, const Event& e) = 0;
+        virtual void onEvent(const EventSource* src, const Event* e) = 0;
 };
 
 class EventSource {
@@ -25,7 +25,7 @@ class EventSource {
         virtual ~EventSource() {}
         virtual bool addListener(EventListener* listener) = 0;
         virtual bool removeListener(EventListener* listener) = 0;
-        virtual void emit(const Event& e) = 0;
+        virtual void emit(const Event* e) = 0;
 };
 
 class SimpleEvent : public Event {
@@ -39,8 +39,8 @@ class SimpleEvent : public Event {
 
 class SimpleEventListener : public EventListener {
     public:
-        virtual void onEvent(EventSource& src, const Event& e) {
-            cout << "saw an event: " << e.getName() << endl;
+        virtual void onEvent(const EventSource* src, const Event* e) {
+            cout << "saw an event: " << e->getName() << endl;
         }
 };
 
@@ -68,11 +68,11 @@ class SimpleEventSource : public EventSource {
             return false;
         }
 
-        virtual void emit(const Event& e) {
+        virtual void emit(const Event* e) {
             vector<EventListener*>::iterator iter;
 
             for (iter = listeners.begin(); iter < listeners.end(); iter++) {
-                (*iter)->onEvent(*this, e);
+                (*iter)->onEvent(this, e);
             }
         }
 };
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     SimpleEventSource s;
 
     s.addListener(&l);
-    s.emit(e);
+    s.emit(&e);
 
     return 0;
 }

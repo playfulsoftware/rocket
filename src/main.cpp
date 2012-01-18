@@ -4,29 +4,11 @@
 
 #include <vector>
 
+#include <public/Event.hpp>
+#include <public/EventListener.hpp>
+#include <public/EventSource.hpp>
+
 using namespace std;
-
-class Event {
-    public:
-        virtual ~Event() {}
-        virtual string getName() const = 0;
-};
-
-class EventSource;
-
-class EventListener {
-    public:
-        virtual ~EventListener() {}
-        virtual void onEvent(const EventSource* src, const Event* e) = 0;
-};
-
-class EventSource {
-    public:
-        virtual ~EventSource() {}
-        virtual bool addListener(EventListener* listener) = 0;
-        virtual bool removeListener(EventListener* listener) = 0;
-        virtual void emit(const Event* e) = 0;
-};
 
 class SimpleEvent : public Event {
     private:

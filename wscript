@@ -27,5 +27,6 @@ def build(ctx):
     ctx.program(
             source = ctx.path.ant_glob("%s/*.cpp" % ENGINE_SRC),
             target = "engine",
-            includes = INCLUDE
+            includes = INCLUDE,
+            use = "static-lua",
             )

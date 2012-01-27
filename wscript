@@ -4,6 +4,7 @@ top = "."
 build = "build"
 
 ENGINE_SRC = "src"
+BUILD_DIR = "build"
 SUPPORT_DIR = "support"
 
 LUA_DIR = "%s/lua-5.2.0" % SUPPORT_DIR
@@ -29,3 +30,5 @@ def build(ctx):
             includes = INCLUDE,
             use = "static-lua",
             )
+
+    ctx(rule="cp ${SRC} ${TGT}", source="%s/test.lua" % ENGINE_SRC, target="test.lua", always=True)

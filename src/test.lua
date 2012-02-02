@@ -1,5 +1,3 @@
-print("Hello, World!")
+trace()
 
-function test_trace() 
-    -- something
-end
+trace("A test!")

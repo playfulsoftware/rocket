@@ -62,6 +62,60 @@ class LuaVM : public EventListener, public EventSource {
                     // check to see if the event name already has a function table in the lua state.
                     // if so, simply append the function to the end of that table.
                     // if not, create a new table with the function as its only member.
+
+                    // get the root cb table.
+                    lua_getfield(L, LUA_REGISTRYINDEX, "event_cbs");
+
+                    // move the string parameter to the top of the stack
+                    lua_pushnil(L);
+                    lua_copy(L, 1, -1);
+
+                    // swap the copy of the string for the function list it points to.
+                    lua_gettable(L, -2);
+
+                    if ( lua_isnil(L, -1) ) {
+                        //std::cerr << "creating new callback table." << std::endl;
+                        // create new table
+                        lua_pop(L, 1);
+                        lua_newtable(L);
+
+                        lua_pushinteger(L, 1);
+
+                        // copy the function to the top of the stack.
+                        lua_pushnil(L);
+                        lua_copy(L, 2, -1);
+
+                        // assign the function to index 1.
+                        lua_settable(L, -3);
+
+                        // assign the new table to the function table
+                        lua_setfield(L, -2, lua_tolstring(L, 1, NULL));
+
+                        // pop the function table reference off the stack.
+                        lua_pop(L, 1);
+
+
+                    } else {
+                        //std::cerr << "appending callback to existing table." << std::endl;
+                        // get the length of the current table.
+                        lua_len(L, -1);
+
+                        // push the integer 1 on to the stack.
+                        lua_pushinteger(L, 1);
+
+                        // add 1 to the existing table lengh;
+                        lua_arith(L, LUA_OPADD);
+
+                        // copy the function to the top of the stack.
+                        lua_pushnil(L);
+                        lua_copy(L, 2, -1);
+
+                        // assign the function to the newest index.
+                        lua_settable(L, -3);
+
+                        // pop the table reference off the stack.
+                        lua_pop(L, 1);
+                    }
                 }
             }
             return 0;
@@ -83,11 +137,40 @@ class LuaVM : public EventListener, public EventSource {
                 } else {
                     // get a reference to the vm
                     LuaVM* self = getVMSelf(L);
-                    SimpleEvent e(luaL_tolstring, nargs, NULL);
+                    SimpleEvent e(luaL_tolstring(L, nargs, NULL));
                     self->emit(&e);
+                    lua_pop(L, 1);
                 }
             }
             return 0;
+        }
+
+        void emitLuaEvent(const Event* e) {
+            int ret = 0;
+            // get the master event callback table.
+            lua_getfield(vmState, LUA_REGISTRYINDEX, "event_cbs");
+            // get our specific event callback sub-table.
+            lua_getfield(vmState, -1, e->getName().c_str());
+
+            if (!lua_isnil(vmState, -1)) {
+                //std::cerr << "found callback table" << std::endl;
+                // iterate the table, and call each function with the event name.
+                lua_pushnil(vmState);
+                while (lua_next(vmState, -2) != 0) {
+                    lua_pushstring(vmState, e->getName().c_str());
+                    ret = lua_pcall(vmState, 1, 0, 0);
+                    if (ret != LUA_OK) {
+                        std::cerr << "an error occurred while calling a lua callback function: " << lua_tolstring(vmState, -1, NULL) << std::endl;
+                        lua_error(vmState);
+                    }
+                }
+
+            } else {
+                //std::cerr << "unable to find callback table." << std::endl;
+            }
+            // pop the table references off the stack.
+            lua_pop(vmState, 2);
+            
         }
 
     public:
@@ -144,9 +227,14 @@ class LuaVM : public EventListener, public EventSource {
 
         virtual void emit(const Event* e) {
             // dispatch event to lua listeners.
-            // emitLuaEvent(e);
+            emitLuaEvent(e);
+            
             // dispatch event to c listeners
             eventSrc.emit(e);
+        }
+
+        virtual void onEvent(const EventSource* src, const Event* e) {
+            emitLuaEvent(e);
         }
 };
 
@@ -158,9 +246,14 @@ int main(int argc, char** argv) {
     LuaVM vm;
 
     s.addListener(&l);
-    s.emit(&e);
+    s.addListener(&vm);
+
+    vm.addListener(&l);
+
 
     vm.runScriptFile("test.lua");
+
+    s.emit(&e);
 
     return 0;
 }

@@ -3,7 +3,6 @@
 
 #include <lua.hpp>
 
-#include <public/Event.hpp>
 #include <public/EventListener.hpp>
 #include <public/EventSource.hpp>
 
@@ -23,7 +22,7 @@ class LuaVM : public EventListener, public EventSource {
 
         static int luaEmitEvent(lua_State* L);
 
-        void emitLuaEvent(const Event* e);
+        void emitLuaEvent(const char* e);
 
     public:
         LuaVM();
@@ -38,9 +37,9 @@ class LuaVM : public EventListener, public EventSource {
 
         virtual bool removeListener(EventListener* listener);
 
-        virtual void emit(const Event* e);
+        virtual void emit(const char* e);
 
-        virtual void onEvent(const EventSource* src, const Event* e);
+        virtual void onEvent(const EventSource* src, const char* e);
 };
 
 #endif //LUAVM_HPP

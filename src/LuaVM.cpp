@@ -1,6 +1,4 @@
 #include <private/LuaVM.hpp>
-#include <private/SimpleEvent.hpp>
-
 
 LuaVM* LuaVM::getVMSelf(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "vmState");
@@ -121,27 +119,26 @@ int LuaVM::luaEmitEvent(lua_State* L) {
         } else {
             // get a reference to the vm
             LuaVM* self = getVMSelf(L);
-            SimpleEvent e(luaL_tolstring(L, nargs, NULL));
-            self->emit(&e);
+            self->emit(luaL_tolstring(L, nargs, NULL));
             lua_pop(L, 1);
         }
     }
     return 0;
 }
 
-void LuaVM::emitLuaEvent(const Event* e) {
+void LuaVM::emitLuaEvent(const char* e) {
     int ret = 0;
     // get the master event callback table.
     lua_getfield(vmState, LUA_REGISTRYINDEX, "event_cbs");
     // get our specific event callback sub-table.
-    lua_getfield(vmState, -1, e->getName().c_str());
+    lua_getfield(vmState, -1, e);
 
     if (!lua_isnil(vmState, -1)) {
         //std::cerr << "found callback table" << std::endl;
         // iterate the table, and call each function with the event name.
         lua_pushnil(vmState);
         while (lua_next(vmState, -2) != 0) {
-            lua_pushstring(vmState, e->getName().c_str());
+            lua_pushstring(vmState, e);
             ret = lua_pcall(vmState, 1, 0, 0);
             if (ret != LUA_OK) {
                 std::cerr << "an error occurred while calling a lua callback function: " << lua_tolstring(vmState, -1, NULL) << std::endl;
@@ -208,7 +205,7 @@ bool LuaVM::removeListener(EventListener* listener) {
     eventSrc.removeListener(listener);
 }
 
-void LuaVM::emit(const Event* e) {
+void LuaVM::emit(const char* e) {
     // dispatch event to lua listeners.
     emitLuaEvent(e);
 
@@ -216,7 +213,7 @@ void LuaVM::emit(const Event* e) {
     eventSrc.emit(e);
 }
 
-void LuaVM::onEvent(const EventSource* src, const Event* e) {
+void LuaVM::onEvent(const EventSource* src, const char* e) {
     emitLuaEvent(e);
 }
 

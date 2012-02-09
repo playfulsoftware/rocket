@@ -4,9 +4,10 @@
 #include <iostream>
 #include <vector>
 
-#include <public/Event.hpp>
 #include <public/EventListener.hpp>
 #include <public/EventSource.hpp>
+
+using namespace std;
 
 
 class SimpleEventSource : public EventSource {
@@ -33,7 +34,7 @@ class SimpleEventSource : public EventSource {
             return false;
         }
 
-        virtual void emit(const Event* e) {
+        virtual void emit(const char* e) {
             vector<EventListener*>::iterator iter;
 
             for (iter = listeners.begin(); iter < listeners.end(); iter++) {

@@ -6,14 +6,14 @@
 
 #include <private/LuaVM.hpp>
 
-#include <private/SimpleEvent.hpp>
 #include <private/SimpleEventListener.hpp>
 #include <private/SimpleEventSource.hpp>
 
 
+class EventLoop : public EventSource {
+};
 
 int main(int argc, char** argv) {
-    SimpleEvent e("MyEvent");
     SimpleEventListener l;
     SimpleEventSource s;
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
     vm.runScriptFile("test.lua");
 
-    s.emit(&e);
+    s.emit("MyEvent");
 
     return 0;
 }

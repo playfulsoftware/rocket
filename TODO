@@ -1,0 +1,3 @@
+1. Turn events from classes to strings, it's simpler and easier this way.
+2. Add a mainloop class.
+3. Add SDL support.

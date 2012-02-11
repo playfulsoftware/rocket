@@ -2,10 +2,14 @@
 
 SRC_DIR = "src"
 
+from waflib.Configure import conf
+
+
 def options(ctx):
     ctx.load("compiler_c")
 
 def configure(ctx):
+
     ctx.load("compiler_c")
     ctx.check_cc(lib="m", uselib_store="M")
     ctx.check_cc(lib="readline", uselib_store="RL")

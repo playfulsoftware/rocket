@@ -1,2 +1,4 @@
-1. Add a mainloop class.
-1. Add SDL support.
+1. Add Lua GameObject code.
+1. Add SDL Graphics support.
+1. Add JSON support.
+1. Start adding asset support.

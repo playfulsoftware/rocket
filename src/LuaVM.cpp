@@ -138,8 +138,8 @@ void LuaVM::emitLuaEvent(const char* e) {
         // iterate the table, and call each function with the event name.
         lua_pushnil(vmState);
         while (lua_next(vmState, -2) != 0) {
-            lua_pushstring(vmState, e);
-            ret = lua_pcall(vmState, 1, 0, 0);
+            // NOTE :: add any arguments to pass to the lua functions here.
+            ret = lua_pcall(vmState, 0, 0, 0);
             if (ret != LUA_OK) {
                 std::cerr << "an error occurred while calling a lua callback function: " << lua_tolstring(vmState, -1, NULL) << std::endl;
                 lua_error(vmState);
@@ -187,12 +187,14 @@ LuaVM::~LuaVM() {
 void LuaVM::runScriptFile(const char* file) {
     if (luaL_dofile(vmState, file) != 0) {
         std::cerr << "an error occurred while executing the script file: " << file << std::endl;
+        //luaL_error(vmState, "lua-fatal");
     }
 }
 
 void LuaVM::runScriptString(const char* buffer) {
     if (luaL_dostring(vmState, buffer) != 0) {
         std::cerr << "an error occurred while executing the script buffer" << std::endl;
+        //luaL_error(vmState, "lua-fatal");
     }
 
 }

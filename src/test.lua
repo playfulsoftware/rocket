@@ -1,13 +1,11 @@
-on_event("MyEvent", function (evt)
-    trace("I saw event: " .. evt)
+trace("Registering Lua event handlers...")
+
+on_event("EngineInit", function(evt)
+    trace("PSEngine starting up...")
 end)
 
-on_event("MyEvent", function(evt)
-    trace("I also saw event: " .. evt)
+on_event("EngineShutdown", function(evt)
+    trace("PSEngine shutting down...")
 end)
 
-trace()
 
-trace("A test!")
-
-emit("ALuaEvent")

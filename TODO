@@ -1,0 +1,8 @@
+1. Add Lua GameObject code.
+1. Add SDL Graphics support.
+1. Add JSON support.
+1. Start adding asset support.
+1. Add FastDelegate.
+1. Add Google Tests ( + Google Mocks ) for TDD.
+1. Add Google Protocol Buffers.
+1. Add libuv support.

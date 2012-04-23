@@ -1,90 +1,80 @@
-#include <cstdio>
-
 #include <iostream>
 
-#include <vector>
 
-using namespace std;
+#include <SDL/SDL.h>
 
-class Event {
-    public:
-        virtual ~Event() {}
-        virtual string getName() const = 0;
-};
+#include <private/LuaVM.hpp>
 
-class EventSource;
+#include <private/SimpleEventListener.hpp>
+#include <private/SimpleEventSource.hpp>
 
-class EventListener {
-    public:
-        virtual ~EventListener() {}
-        virtual void onEvent(const EventSource* src, const Event* e) = 0;
-};
+class SDLEngineLoop : public EventSource {
 
-class EventSource {
-    public:
-        virtual ~EventSource() {}
-        virtual bool addListener(EventListener* listener) = 0;
-        virtual bool removeListener(EventListener* listener) = 0;
-        virtual void emit(const Event* e) = 0;
-};
-
-class SimpleEvent : public Event {
     private:
-        string _name;
-    public:
-        SimpleEvent(string name) : _name(name) {}
-
-        virtual string getName() const { return _name; }
-};
-
-class SimpleEventListener : public EventListener {
-    public:
-        virtual void onEvent(const EventSource* src, const Event* e) {
-            cout << "saw an event: " << e->getName() << endl;
-        }
-};
-
-class SimpleEventSource : public EventSource {
-    private:
-        vector<EventListener*> listeners;
+        bool shouldRun;
+        SimpleEventSource evtSrc;
 
     public:
-        virtual bool addListener(EventListener* listener) {
-            listeners.push_back(listener);
-            cout << "Added Listener" << endl;
-            return true;
+        SDLEngineLoop() : shouldRun(true) {
+            if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+                std::cerr << "fatal error: unable to initialize SDL" << std::endl;
+                exit(1);
+            } else {
+                std::cerr << "SDL initialized." << std::endl;
+            }
         }
 
-        virtual bool removeListener(EventListener* listener) {
-            vector<EventListener*>::iterator iter;
+        ~SDLEngineLoop() { 
+            std::cerr << "shutting down SDL." << std::endl;
+            SDL_Quit(); 
+        }
 
-            for (iter = listeners.begin(); iter < listeners.end(); iter++) {
-                if (listener == *iter) {
-                    listeners.erase(iter);
-                    return true;
+        int start() {
+
+            emit("EngineInit");
+
+            SDL_Event evt;
+
+            while (shouldRun) {
+                //handle SDL events. 
+                while (SDL_PollEvent(&evt)) {
+                    switch (evt.type) {
+                        case SDL_QUIT:
+                            shouldRun = false;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
 
-            return false;
+            emit("EngineShutdown");
+
+            return 0;
         }
 
-        virtual void emit(const Event* e) {
-            vector<EventListener*>::iterator iter;
+        virtual bool addListener(EventListener* l) {
+            evtSrc.addListener(l);
+        }
 
-            for (iter = listeners.begin(); iter < listeners.end(); iter++) {
-                (*iter)->onEvent(this, e);
-            }
+        virtual bool removeListener(EventListener *l) {
+            evtSrc.removeListener(l);
+        }
+
+        virtual void emit(const char* e) {
+            evtSrc.emit(e);
         }
 };
 
 int main(int argc, char** argv) {
-    SimpleEvent e("MyEvent");
-    SimpleEventListener l;
-    SimpleEventSource s;
 
-    s.addListener(&l);
-    s.emit(&e);
+    SDLEngineLoop main;
+    LuaVM vm;
 
-    return 0;
+    main.addListener(&vm);
+
+    vm.runScriptFile("test.lua");
+
+    return main.start();
 }
 

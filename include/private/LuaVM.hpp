@@ -22,6 +22,10 @@ class LuaVM : public EventListener, public EventSource {
 
         static int luaEmitEvent(lua_State* L);
 
+        static int luaRegisterObject(lua_State* L);
+
+        static int luaUnregisterObject(lua_State* L);
+
         void emitLuaEvent(const char* e);
 
     public:

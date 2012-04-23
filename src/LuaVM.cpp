@@ -112,6 +112,7 @@ int LuaVM::luaEmitEvent(lua_State* L) {
         lua_error(L);
     } else if (nargs > 1) {
         lua_pushstring(L, "Too many arguments");
+        lua_error(L);
     } else {
         if (! lua_isstring(L, 1)) {
             lua_pushstring(L, "Event name must be a string.");
@@ -123,6 +124,49 @@ int LuaVM::luaEmitEvent(lua_State* L) {
             lua_pop(L, 1);
         }
     }
+    return 0;
+}
+
+int LuaVM::luaRegisterObject(lua_State* L) {
+    int nargs = lua_gettop(L);
+
+    if (nargs < 1) {
+        lua_pushstring(L, "Too few arguments");
+        lua_error(L);
+    } else if (nargs > 1) {
+        lua_pushstring(L, "Too many arguments");
+    } else {
+        if (! lua_istable(L, 1)) {
+            lua_pushstring(L, "argument must be an object (Table).");
+            lua_error(L);
+        } else {
+            // push a reference to the object list onto the stack.
+            lua_getfield(L, LUA_REGISTRYINDEX, "objects");
+
+            // push the length of the table onto the stack.
+            lua_len(L, -1);
+
+            // push the int 1 onto the stack.
+            lua_pushinteger(L, 1);
+
+            // add 1 to the current table length (lua is one-index-based ) to get the next index.
+            lua_arith(L, LUA_OPADD);
+
+            // copy the object onto the top of the table.
+            lua_pushnil(L);
+            lua_copy(L, 1, -1);
+
+            // add the object to the table.
+            lua_settable(L, -3);
+
+            // pop the table off the stack
+            lua_pop(L, 1);
+        }
+    }
+    return 0;
+}
+
+int LuaVM::luaUnregisterObject(lua_State* L) {
     return 0;
 }
 
@@ -167,6 +211,10 @@ LuaVM::LuaVM() {
     lua_newtable(vmState);
     lua_setfield(vmState, LUA_REGISTRYINDEX, "event_cbs");
 
+    // create the registered objects table.
+    lua_newtable(vmState);
+    lua_setfield(vmState, LUA_REGISTRYINDEX, "objects");
+
     // add the trace() command.
     lua_pushcfunction(vmState, luaTrace);
     lua_setglobal(vmState, "trace");
@@ -178,6 +226,14 @@ LuaVM::LuaVM() {
     // add the emit() command.
     lua_pushcfunction(vmState, luaEmitEvent);
     lua_setglobal(vmState, "emit");
+
+    // add the register() command.
+    lua_pushcfunction(vmState, luaRegisterObject);
+    lua_setglobal(vmState, "register");
+
+    // add the unregister() command.
+    lua_pushcfunction(vmState, luaUnregisterObject);
+    lua_setglobal(vmState, "unregister");
 }
 
 LuaVM::~LuaVM() {

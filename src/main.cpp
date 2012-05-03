@@ -5,14 +5,10 @@
 
 #include "LuaVM.hpp"
 
-#include "SimpleEventListener.hpp"
-#include "SimpleEventSource.hpp"
-
-class SDLEngineLoop : public EventSource {
+class SDLEngineLoop{
 
     private:
         bool shouldRun;
-        SimpleEventSource evtSrc;
 
     public:
         SDLEngineLoop() : shouldRun(true) {
@@ -31,7 +27,6 @@ class SDLEngineLoop : public EventSource {
 
         int start() {
 
-            emit("EngineInit");
 
             SDL_Event evt;
 
@@ -48,30 +43,15 @@ class SDLEngineLoop : public EventSource {
                 }
             }
 
-            emit("EngineShutdown");
-
             return 0;
         }
 
-        virtual bool addListener(EventListener* l) {
-            evtSrc.addListener(l);
-        }
-
-        virtual bool removeListener(EventListener *l) {
-            evtSrc.removeListener(l);
-        }
-
-        virtual void emit(const char* e) {
-            evtSrc.emit(e);
-        }
 };
 
 int main(int argc, char** argv) {
 
     SDLEngineLoop main;
     LuaVM vm;
-
-    main.addListener(&vm);
 
     if (!vm.runScriptFile("test.lua")) {
         std::cerr << "an error occurred while loading the lua startup script" << std::endl;

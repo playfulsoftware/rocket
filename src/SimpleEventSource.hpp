@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 
-#include <public/EventListener.hpp>
-#include <public/EventSource.hpp>
+#include "EventListener.hpp"
+#include "EventSource.hpp"
 
 using namespace std;
 

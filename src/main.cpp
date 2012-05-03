@@ -3,10 +3,10 @@
 
 #include <SDL/SDL.h>
 
-#include <private/LuaVM.hpp>
+#include "LuaVM.hpp"
 
-#include <private/SimpleEventListener.hpp>
-#include <private/SimpleEventSource.hpp>
+#include "SimpleEventListener.hpp"
+#include "SimpleEventSource.hpp"
 
 class SDLEngineLoop : public EventSource {
 
@@ -73,7 +73,12 @@ int main(int argc, char** argv) {
 
     main.addListener(&vm);
 
-    vm.runScriptFile("test.lua");
+    if (!vm.runScriptFile("test.lua")) {
+        std::cerr << "an error occurred while loading the lua startup script" << std::endl;
+        //luaL_error(vmState, "lua-fatal");
+        return 1;
+    }
+
 
     return main.start();
 }

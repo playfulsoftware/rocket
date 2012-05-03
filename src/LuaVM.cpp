@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "LuaVM.h"
 
 LuaVM* LuaVM::getVMSelf(lua_State* L) {
@@ -21,6 +23,7 @@ int LuaVM::luaTrace(lua_State* L) {
         lua_pushstring(L, "Too many arguments");
         lua_error(L);
     }
+}
 
 
 LuaVM::LuaVM() {
@@ -48,17 +51,3 @@ bool LuaVM::runScriptFile(const char* file) {
 bool LuaVM::runScriptString(const char* buffer) {
     return luaL_dostring(vmState, buffer) == 0;
 }
-
-
-void LuaVM::emit(const char* e) {
-    // dispatch event to lua listeners.
-    emitLuaEvent(e);
-
-    // dispatch event to c listeners
-    eventSrc.emit(e);
-}
-
-void LuaVM::onEvent(const EventSource* src, const char* e) {
-    emitLuaEvent(e);
-}
-

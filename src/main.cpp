@@ -11,8 +11,8 @@ using namespace fastdelegate;
 
 class EventArgs { 
     public:
-        virtual const char* getEventName() = 0;
-        virtual void* getEventData() = 0;
+        virtual const char* getEventName() const= 0;
+        virtual void* getEventData() const = 0;
 };
 
 typedef FastDelegate<void (const EventArgs &)> EventHandler;
@@ -45,8 +45,8 @@ class SDLEventArgs : public EventArgs {
     public:
         SDLEventArgs(std::string evt_name) { name = evt_name; }
 
-        virtual const char* getEventName() { return name.c_str(); }
-        virtual void* getEventData() { return NULL; }
+        virtual const char* getEventName() const { return name.c_str(); }
+        virtual void* getEventData() const { return NULL; }
 
     private:
         std::string name;
@@ -103,6 +103,7 @@ class SDLEngineLoop{
 
 void test(const EventArgs& e) {
     std::cerr << "in event handler func" << std::endl;
+    std::cerr << "sdl message: " << e.getEventName() << std::endl;
 }
 
 class TestClass {

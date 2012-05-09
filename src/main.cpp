@@ -1,5 +1,6 @@
 #include <deque>
 #include <iostream>
+#include <map>
 #include <string>
 
 #include <SDL/SDL.h>
@@ -12,55 +13,47 @@ using namespace fastdelegate;
 
 class EventArgs { 
     public:
-        virtual const char* getEventName() const= 0;
         virtual void* getEventData() const = 0;
 };
 
 typedef FastDelegate<void (const EventArgs &)> EventHandler;
 
-// We differentiate between arguments to allow for the binding of subclasses
-// to an ancestor's member function pointer.
-template <class X, class Y>
-EventHandler makeHandler(X* klass, void (Y::*func_ptr)(const EventArgs&)) {
-    return EventHandler(klass, func_ptr);
-}
-
-class Event {
+class IEventEmitter {
     public:
-        void on(const EventHandler& handler) {
-            handlers.push_back(handler);
-        }
-
-        void operator()(const EventArgs &e) {
-            std::deque<EventHandler>::iterator iter = handlers.begin();
-            for (iter; iter != handlers.end(); ++iter) {
-                (*iter)(e);
-            }
-        }
-
-    private:
-        std::deque<EventHandler> handlers;
+        virtual void on(const char* eventName, const EventHandler& handler) = 0;
 };
 
 class SDLEventArgs : public EventArgs {
     public:
-        SDLEventArgs(std::string evt_name) { name = evt_name; }
-
-        virtual const char* getEventName() const { return name.c_str(); }
         virtual void* getEventData() const { return NULL; }
-
-    private:
-        std::string name;
 };
 
-class SDLEngineLoop{
+class SDLEngineLoop : public IEventEmitter {
 
     private:
+
         bool shouldRun;
+        std::map< std::string, std::deque<EventHandler> > events;
+
+        void emit(const char* name, const EventArgs &e) {
+            if (events.find(name) != events.end()) {
+                std::deque<EventHandler>::iterator iter = events[name].begin();
+                for (iter; iter != events[name].end(); ++iter) {
+                    (*iter)(e);
+                }
+            }
+        }
 
     public:
 
-        Event engineEvents;
+        virtual void on(const char* eventName, const EventHandler& handler) {
+            if (events.find(eventName) == events.end()) {
+                std::deque<EventHandler> queue;
+                events[eventName] = queue;
+            }
+            events[eventName].push_back(handler);
+        }
+
 
         SDLEngineLoop() : shouldRun(true) {
             if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
@@ -78,8 +71,8 @@ class SDLEngineLoop{
 
         int start() {
             std::cerr << "sending start loop message" << std::endl;
-            SDLEventArgs start("SDLLoopStart");
-            engineEvents(start);
+            SDLEventArgs start;
+            emit("SDLLoopStart", start);
             std::cerr << "message sent" << std::endl;
 
             SDL_Event evt;
@@ -104,7 +97,6 @@ class SDLEngineLoop{
 
 void test(const EventArgs& e) {
     std::cerr << "in event handler func" << std::endl;
-    std::cerr << "sdl message: " << e.getEventName() << std::endl;
 }
 
 class TestClass {
@@ -134,8 +126,8 @@ int main(int argc, char** argv) {
 
     TestClass t;
 
-    main.engineEvents.on(EventHandler(test));
-    main.engineEvents.on(EventHandler(&t, &TestClass::func));
+    main.on("SDLLoopStart", EventHandler(test));
+    main.on("SDLLoopStart", EventHandler(&t, &TestClass::func));
     LuaVM vm;
 
     if (!vm.runStartupScript(configPath.c_str())) {

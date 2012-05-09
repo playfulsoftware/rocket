@@ -6,6 +6,7 @@
 
 #include "FastDelegate.h"
 #include "LuaVM.h"
+#include "utils.h"
 
 using namespace fastdelegate;
 
@@ -115,18 +116,34 @@ class TestClass {
 
 int main(int argc, char** argv) {
 
+    const char* envPath = getenv("PSENGINE_CONFIG");
+    std::string configPath;
+
+    if (envPath != NULL) { 
+        configPath = envPath;
+    } else if (argc > 1) {
+        configPath =  argv[1];
+    } else {
+        configPath = getBinPath(argv[0]) + "config.lua";
+    }
+
+    std::cerr << "engine path root: " << configPath << std::endl;
+
+
     SDLEngineLoop main;
 
     TestClass t;
 
     main.engineEvents.on(EventHandler(test));
     main.engineEvents.on(EventHandler(&t, &TestClass::func));
-    //LuaVM vm;
+    LuaVM vm;
 
-    //if (!vm.runScriptFile("test.lua")) {
-    //    std::cerr << "an error occurred while loading the lua startup script" << std::endl;
-    //    return 1;
-    //}
+    if (!vm.runStartupScript(configPath.c_str())) {
+        std::cerr << "an error occurred while loading the lua startup script" << std::endl;
+        return 1;
+    }
+
+    std::cerr << "screen is " << vm.getConfigNumber("width") << "x" << vm.getConfigNumber("height") << std::endl;
 
 
     return main.start();

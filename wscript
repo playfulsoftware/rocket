@@ -30,12 +30,13 @@ def configure(ctx):
     ctx.load("compiler_c")
     ctx.recurse(LUA_DIR)
 
-    #ctx.check_cc(lib="SDL")
     # OSX-specific SDL config.. this allows us to use the canonical sdl osx 
     # install without having to do re-install it for building this specifically.
     if ctx.env["DEST_OS"] == "darwin":
         ctx.env.FRAMEWORK_SDL = "SDL"
         ctx.env.FRAMEWORK_COCOA = "Cocoa"
+    else:
+        ctx.check_cfg(path="sdl-config", package="", args="--cflags --libs", uselib_store="SDL")
 
 
 def build(ctx):
@@ -43,7 +44,7 @@ def build(ctx):
     ctx.recurse(LUA_DIR)
 
     srcs = ctx.path.ant_glob("%s/*.cpp" % ENGINE_SRC)
-    libs = ["static-lua"]
+    libs = ["static-lua", "SDL"]
 
     if ctx.env["DEST_OS"] == "darwin":
         ctx.objects(
@@ -53,8 +54,7 @@ def build(ctx):
                 use=["SDL", "COCOA"]
                 )
 
-
-        libs += ["SDL", "COCOA", "sdlmain"]
+        libs += ["COCOA", "sdlmain"]
 
     ctx.program(
             source = ctx.path.ant_glob("%s/*.cpp" % ENGINE_SRC),

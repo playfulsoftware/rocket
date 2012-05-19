@@ -11,10 +11,10 @@ def m_hook(self, node):
 
 ENGINE_SRC = "src"
 BUILD_DIR = "build"
-SUPPORT_DIR = "support"
+DEPS_DIR = "deps"
 
-LUA_DIR = "%s/lua-5.2.0" % SUPPORT_DIR
-SDL_OSX_DIR = "%s/sdl_osx" % SUPPORT_DIR
+LUA_DIR = "%s/lua-5.2.0" % DEPS_DIR
+SDL_OSX_DIR = "%s/sdl_osx" % DEPS_DIR
 
 sdl_main = "%s/SDLMain.m" % SDL_OSX_DIR
 
@@ -28,6 +28,7 @@ def options(ctx):
 def configure(ctx):
     ctx.load("compiler_cxx")
     ctx.load("compiler_c")
+    ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
     ctx.recurse(LUA_DIR)
 
     # OSX-specific SDL config.. this allows us to use the canonical sdl osx 

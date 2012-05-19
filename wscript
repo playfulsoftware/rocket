@@ -4,6 +4,10 @@ top = "."
 build = "build"
 
 from waflib import TaskGen
+from waflib import Scripting
+
+from waflib.Build import BuildContext
+from waflib.Configure import ConfigurationContext
 
 @TaskGen.extension(".m")
 def m_hook(self, node):
@@ -19,6 +23,11 @@ SDL_OSX_DIR = "%s/sdl_osx" % DEPS_DIR
 sdl_main = "%s/SDLMain.m" % SDL_OSX_DIR
 
 INCLUDE = ["include", "%s/src" % LUA_DIR]
+
+class ModuleFinderContext(ConfigurationContext):
+    cmd = "find_deps"
+    fun = "find_deps"
+    
 
 def options(ctx):
     ctx.load("compiler_cxx")
@@ -39,8 +48,17 @@ def configure(ctx):
     else:
         ctx.check_cfg(path="sdl-config", package="", args="--cflags --libs", uselib_store="SDL")
 
+    Scripting.run_command("find_deps")
+
+def find_deps(ctx):
+    print ("resolving module dependencies.")
+    ctx.env.deps = []
 
 def build(ctx):
+
+    print ("building dependencies")
+    for dep in ctx.env.deps:
+        pass
     
     ctx.recurse(LUA_DIR)
 

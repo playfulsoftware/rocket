@@ -1,0 +1,20 @@
+{
+  "ctype": "c",
+  "all": {
+    "sources" : [
+      {
+        "include" : "src/*.c",
+        "exclude" : ["src/lua.c", "src/luac.c"]
+      }
+    ],
+    "includes" : [
+      "src"
+    ],
+    "cflags" : [ "-Wall", "-O2"],
+    "defines" : [ "LUA_COMPAT_ALL" ],
+    "libs": [ "m", "readline"]
+  },
+  "darwin" : {
+    "defines" : [ "LUA_USE_MACOSX" ]
+  }
+}

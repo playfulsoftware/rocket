@@ -81,6 +81,8 @@ def build(ctx):
     
     ctx.objects(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
 
+    libs += ["lua"]
+
     irr_srcs = []
     for path in IRR_DIRS:
       if path.endswith("bzip2"):
@@ -94,12 +96,15 @@ def build(ctx):
       else:
         irr_srcs += ctx.path.ant_glob(incl=["%s/*.c" % path, "%s/*.cpp" % path])
 
-    ctx.objects(features = "c cxx", 
-                source = irr_srcs, 
-                includes = IRR_DIRS + ["%s/include" % IRR_DIR],
-                target = "irrlicht")
+    #ctx.objects(features = "c cxx", 
+    #            source = irr_srcs, 
+    #            includes = IRR_DIRS + ["%s/include" % IRR_DIR],
+    #            target = "irrlicht")
 
-    libs += ["lua", "irrlicht"]
+    #incl += ["%s/include" % IRR_DIR]
+
+    #libs += ["irrlicht"]
+
 
     if ctx.env["DEST_OS"] == "darwin":
         ctx.objects(
@@ -109,7 +114,7 @@ def build(ctx):
                 use=["SDL", "COCOA"]
                 )
 
-        libs += ["COCOA", "sdlmain", "IOKIT", "CARBON", "OPENGL"]
+        libs += ["COCOA", "sdlmain"]
 
     ctx.program(
             source = ctx.path.ant_glob("%s/*.cpp" % ENGINE_SRC),

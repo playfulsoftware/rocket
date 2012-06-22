@@ -79,7 +79,7 @@ def build(ctx):
 
     lua_srcs = ctx.path.ant_glob("%s/*.c" % LUA_SRC, excl=map(lambda x: "%s/%s" % (LUA_SRC, x), ["lua.c", "luac.c"]))
     
-    ctx.objects(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
+    ctx.stlib(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
 
     libs += ["lua"]
 

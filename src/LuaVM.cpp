@@ -113,11 +113,21 @@ bool LuaVM::runStartupScript(const char* file) {
 std::string LuaVM::getConfigString(const char* name) {
     lua_getglobal(vmState, "config");
     lua_getfield(vmState, -1, name);
-    return lua_tostring(vmState, -1);
+    if (lua_isnil(vmState, -1)) {
+      std::cerr << "unable to return " << name << ": not found";
+      return "";
+    } else {
+      return lua_tostring(vmState, -1);
+    }
 }
 
 double LuaVM::getConfigNumber(const char* name) {
     lua_getglobal(vmState, "config");
     lua_getfield(vmState, -1, name);
-    return lua_tonumber(vmState, -1);
+    if (lua_isnil(vmState, -1)) {
+      std::cerr << "unable to return " << name << ": not found";
+      return -1;
+    } else {
+      return lua_tonumber(vmState, -1);
+    }
 }

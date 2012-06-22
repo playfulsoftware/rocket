@@ -9,14 +9,12 @@
 #include "LuaVM.h"
 #include "utils.h"
 
-using namespace fastdelegate;
-
 class EventArgs { 
     public:
         virtual void* getEventData() const = 0;
 };
 
-typedef FastDelegate<void (const EventArgs &)> EventHandler;
+typedef fastdelegate::FastDelegate<void (const EventArgs &)> EventHandler;
 
 class IEventEmitter {
     public:
@@ -69,11 +67,33 @@ class SDLEngineLoop : public IEventEmitter {
             SDL_Quit(); 
         }
 
+        void createWindow(int width, int height) {
+            // define the GL settings
+            SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+            SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+            SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+            SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+            SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+            int flags = SDL_OPENGL;
+
+            // initialize the window
+            const SDL_VideoInfo* info = SDL_GetVideoInfo();
+
+            if (SDL_SetVideoMode(width, height, info->vfmt->BitsPerPixel, flags) == 0)
+            {
+              // bail
+              exit(1);
+            }
+        }
+
         int start() {
             std::cerr << "sending start loop message" << std::endl;
             SDLEventArgs start;
             emit("SDLLoopStart", start);
             std::cerr << "message sent" << std::endl;
+
+
 
             SDL_Event evt;
 
@@ -137,6 +157,7 @@ int main(int argc, char** argv) {
 
     std::cerr << "screen is " << vm.getConfigNumber("width") << "x" << vm.getConfigNumber("height") << std::endl;
 
+    main.createWindow((int)vm.getConfigNumber("width"), (int)vm.getConfigNumber("height"));
 
     return main.start();
 }

@@ -1,6 +1,0 @@
-Lua scripting interface
-
--- loads config data via scripts
--- loads asset data via scripts
--- exposes engine api
-

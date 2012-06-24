@@ -19,9 +19,11 @@
 1. Add "Headless", aka Server support for running without an active display.
 
 ## Scripting Support
-1. Add Basic Lua Interpreter Support -- Cary Started
+1. Add Basic Global Lua Interpreter Support -- Cary Complete
+1. Update Global Access code to do more type-checking -- Cary Started
+1. Add Support for creating private tables -- Cary Started
+1. Update Lua code to use references as well as strings -- Cary Started
 1. Add LuaJIT and/or Lua-LLVM Support
-1. Update Lua code to use references instead of strings
 
 ## Physics Support
 1. Add Bullet3 Support

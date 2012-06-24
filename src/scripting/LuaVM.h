@@ -1,10 +1,15 @@
-#ifndef LUAVM_H
-#define LUAVM_H
+// LuaVM.h
+// Copyright 2012 PlayfulSoftware
+
+#ifndef ROCKET_SCRIPTING_LUAVM_H
+#define ROCKET_SCRIPTING_LUAVM_H
 
 #include <string>
 
 #include <lua.hpp>
 
+namespace Rocket {
+namespace Scripting {
 
 class LuaVM {
     public:
@@ -38,4 +43,7 @@ class LuaVM {
 
 };
 
-#endif //LUAVM_H
+} // Scripting
+} // Rocket
+
+#endif //ROCKET_SCRIPTING_LUAVM_H

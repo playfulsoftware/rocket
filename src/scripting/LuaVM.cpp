@@ -1,11 +1,14 @@
 
 #include <iostream>
 
-#include "LuaVM.h"
+#include "scripting/LuaVM.h"
 
 static int luaNoOp(lua_State* L) {
     return 0;
 }
+
+namespace Rocket {
+namespace Scripting {
 
 LuaVM* LuaVM::getVMSelf(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "vmState");
@@ -131,3 +134,6 @@ double LuaVM::getConfigNumber(const char* name) {
       return lua_tonumber(vmState, -1);
     }
 }
+
+} // Scripting
+} // Rocket

@@ -19,7 +19,7 @@ BUILD_DIR = "build"
 DEPS_DIR = "deps"
 SUPPORT_DIR = "support"
 
-LUA_DIR = "%s/lua-5.2.0" % DEPS_DIR
+LUA_DIR = "%s/lua-5.2.1" % DEPS_DIR
 LUA_SRC = "%s/src" % LUA_DIR
 
 

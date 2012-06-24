@@ -23,7 +23,7 @@ LUA_DIR = "%s/lua-5.2.0" % DEPS_DIR
 LUA_SRC = "%s/src" % LUA_DIR
 
 
-SDL_OSX_DIR = "%s/sdl_osx" % SUPPORT_DIR
+SDL_OSX_DIR = "%s/sdl1.3_osx" % SUPPORT_DIR
 
 sdl_main = "%s/SDLMain.m" % SDL_OSX_DIR
 

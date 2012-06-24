@@ -3,7 +3,7 @@
 
 #include <SDL/SDL.h> // need to include the SDL header so the main gets remapped correctly.
 #include "platforms/sdl/SDLPlatform.h"
-#include "scripting/LuaVM.h"
+#include "scripting/LuaInstance.h"
 
 
 int main(int argc, char** argv) {

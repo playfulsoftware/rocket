@@ -1,6 +1,6 @@
 # Lua scripting interface
 
-1. loads config data via scripts
-1. loads asset data via scripts
-1. exposes engine api
+1. Provides easy access to global lua state
+1. Allows for modules of functions to be easily loaded
+1. Allows additional commands to be loaded via plugins.
 

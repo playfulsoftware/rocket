@@ -5,7 +5,9 @@
 
 import bz2
 import os
+import stat
 import StringIO
+import subprocess
 import sys
 import tarfile
 import urllib2
@@ -22,11 +24,27 @@ PKGS = {
         }
 }
 
+WAF_BUILD_CMD = ["python", "waf-light"]
+WAF_TOOLS = ["compat15", "msvs", "xcode"]
+
 def grab_tarball(dir_path, url):
     urlObj = urllib2.urlopen(url)
     fileObj = StringIO.StringIO(urlObj.read())
     tarball = tarfile.open(None, "r", fileObj)
     tarball.extractall(dir_path)
+
+def build_waf(waf_dir):
+    proj_root = os.getcwd()
+    os.chdir(os.path.join(proj_root, waf_dir))
+    tool_list = "--tools=%s" % (",".join(WAF_TOOLS))
+    subprocess.call(WAF_BUILD_CMD + [tool_list])
+
+    # copy the created waf file into the project root
+    open(os.path.join(proj_root, "waf"), "wb").write(open("waf", "rb").read())
+
+    # change back to the project root directory
+    os.chdir(proj_root)
+    os.chmod("waf", stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
 
 def main():
@@ -39,6 +57,11 @@ def main():
         else:
             print "Downloading %s v%s" % (pkg, pkg_info["version"])
             grab_tarball(DEPS_DIR, pkg_info["url"] % pkg_info)
+
+    # build the waf package
+    if not os.path.exists("waf"):
+        print "building waf binary"
+        build_waf(os.path.join(DEPS_DIR, "waf-%s" % PKGS["waf"]["version"]))
 
 if __name__ == "__main__":
     main()

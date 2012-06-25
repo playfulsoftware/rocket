@@ -3,7 +3,10 @@
 top = "."
 build = "build"
 
-from waflib import Scripting
+import os.path
+import subprocess
+
+from waflib.Configure import conf
 from waflib import TaskGen
 
 @TaskGen.extension(".m")
@@ -22,12 +25,27 @@ SUPPORT_DIR = "support"
 LUA_DIR = "%s/lua-5.2.1" % DEPS_DIR
 LUA_SRC = "%s/src" % LUA_DIR
 
-
 SDL_OSX_DIR = "%s/sdl1.3_osx" % SUPPORT_DIR
 
 sdl_main = "%s/SDLMain.m" % SDL_OSX_DIR
 
 INCLUDE = [ENGINE_SRC, LUA_SRC]
+
+REPOS = {
+        "sdl2": {
+            "type": "hg",
+            "url": "http://hg.libsdl.org/SDL"
+        }
+}
+
+@conf
+def clone_hg_repo(ctx, name, url):
+    dest_dir = os.path.join(DEPS_DIR, name)
+    ctx.start_msg("Downloading %s" % name)
+    ctx.cmd_and_log([ctx.env.HG, "clone", url, dest_dir])
+    ctx.end_msg("OK")
+
+
 
 def options(ctx):
     ctx.load("compiler_cxx")
@@ -36,6 +54,21 @@ def options(ctx):
 def configure(ctx):
     ctx.load("compiler_cxx")
     ctx.load("compiler_c")
+
+    ## search for tools needed to grab the external dependencies.
+    ctx.find_program("git")
+    ctx.find_program("hg")
+
+    # get repo checkouts of dependencies
+    for repo, repo_data in REPOS.items():
+        ctx.start_msg("Checking for %s repository" % repo)
+        if os.path.exists(os.path.join(DEPS_DIR, repo)):
+            ctx.end_msg("OK")
+        else:
+            ctx.end_msg("NOT FOUND", "YELLOW")
+            if repo_data["type"] is "hg":
+                ctx.clone_hg_repo(repo, repo_data["url"])
+
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
 
     ctx.check_cc(lib=["m","readline"], uselib_store="lua_deps")

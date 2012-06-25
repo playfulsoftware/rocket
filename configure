@@ -63,6 +63,9 @@ def main():
         print "building waf binary"
         build_waf(os.path.join(DEPS_DIR, "waf-%s" % PKGS["waf"]["version"]))
 
+    # run the 'waf configure command
+    subprocess.call(["./waf", "configure"])
+
 if __name__ == "__main__":
     main()
 

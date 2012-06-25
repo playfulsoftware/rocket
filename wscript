@@ -73,6 +73,8 @@ def configure(ctx):
             ctx.end_msg("not found", "YELLOW")
             if repo_data["type"] is "hg":
                 ctx.clone_hg_repo(repo, repo_data["url"])
+            elif repo_data["type"] is "git":
+                ctx.clone_git_repo(repo, repo_data["url"])
         ctx.env["DEP_%s_PATH" % repo.upper()]  = os.path.join(os.getcwd(), DEPS_DIR, repo)
 
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])

@@ -1,0 +1,45 @@
+#!/usr/bin/python
+
+# configure -- Configuration bootstrap script for the Rocket engine.
+# this script downloads and builds a copy of waf, which is then used by the rest of the build process.
+
+import bz2
+import os
+import StringIO
+import sys
+import tarfile
+import urllib2
+
+DEPS_DIR = "deps"
+PKGS = {
+        "waf": {
+            "url": "http://waf.googlecode.com/files/waf-%(version)s.tar.bz2",
+            "version": "1.6.11"
+        },
+        "lua": {
+            "url": "http://www.lua.org/ftp/lua-%(version)s.tar.gz",
+            "version": "5.2.1"
+        }
+}
+
+def grab_tarball(dir_path, url):
+    urlObj = urllib2.urlopen(url)
+    fileObj = StringIO.StringIO(urlObj.read())
+    tarball = tarfile.open(None, "r", fileObj)
+    tarball.extractall(dir_path)
+
+
+def main():
+    if not os.path.exists(DEPS_DIR): os.mkdir(DEPS_DIR)
+    for pkg, pkg_info in PKGS.items():
+        pkg_str = "%s v%s" % (pkg, pkg_info["version"])
+        print "Checking for %s" % pkg_str
+        if os.path.exists(os.path.join(DEPS_DIR, "%s-%s" % (pkg, pkg_info["version"]))):
+            print "%s up to date" % pkg_str
+        else:
+            print "Downloading %s v%s" % (pkg, pkg_info["version"])
+            grab_tarball(DEPS_DIR, pkg_info["url"] % pkg_info)
+
+if __name__ == "__main__":
+    main()
+

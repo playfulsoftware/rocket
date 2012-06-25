@@ -3,7 +3,7 @@
 top = "."
 build = "build"
 
-import os.path
+import os
 import subprocess
 
 from waflib.Configure import conf
@@ -43,9 +43,14 @@ def clone_hg_repo(ctx, name, url):
     dest_dir = os.path.join(DEPS_DIR, name)
     ctx.start_msg("Downloading %s" % name)
     ctx.cmd_and_log([ctx.env.HG, "clone", url, dest_dir])
-    ctx.end_msg("OK")
+    ctx.end_msg("ok")
 
-
+@conf
+def clone_git_repo(ctx, name, url):
+    dest_dir = os.path.join(DEPS_DIR, name)
+    ctx.start_msg("Downloading %s" % name)
+    ctx.cmd_and_log([ctx.env.GIT, "clone", url, dest_dir])
+    ctx.end_msg("ok")
 
 def options(ctx):
     ctx.load("compiler_cxx")
@@ -63,55 +68,51 @@ def configure(ctx):
     for repo, repo_data in REPOS.items():
         ctx.start_msg("Checking for %s repository" % repo)
         if os.path.exists(os.path.join(DEPS_DIR, repo)):
-            ctx.end_msg("OK")
+            ctx.end_msg("yes")
         else:
-            ctx.end_msg("NOT FOUND", "YELLOW")
+            ctx.end_msg("not found", "YELLOW")
             if repo_data["type"] is "hg":
                 ctx.clone_hg_repo(repo, repo_data["url"])
+        ctx.env["DEP_%s_PATH" % repo.upper()]  = os.path.join(os.getcwd(), DEPS_DIR, repo)
 
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
 
     ctx.check_cc(lib=["m","readline"], uselib_store="lua_deps")
 
-    # OSX-specific SDL config.. this allows us to use the canonical sdl osx 
-    # install without having to do re-install it for building this specifically.
     if ctx.env["DEST_OS"] == "darwin":
+        # SDL on OSX needs these frameworks
         ctx.env.FRAMEWORK_SDL = "SDL"
         ctx.env.FRAMEWORK_COCOA = "Cocoa"
         ctx.env.FRAMEWORK_OPENGL = "OpenGL"
-        ctx.env.FRAMEWORK_CARBON = "Carbon"
-        ctx.env.FRAMEWORK_IOKIT = "IOKit"
     else:
         ctx.check_cfg(path="sdl-config", package="", args="--cflags --libs", uselib_store="SDL")
 
+@conf
+def build_lua(ctx):
+    lua_srcs = ctx.path.ant_glob("%s/*.c" % LUA_SRC, excl=map(lambda x: "%s/%s" % (LUA_SRC, x), ["lua.c", "luac.c"]))
+    ctx.stlib(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
+    return ["lua"]
+
+
 def build(ctx):
 
-    incl = INCLUDE
+    src = []
+    incls = INCLUDE
     libs = []
 
-    srcs = ctx.path.ant_glob("%s/*.cpp" % ENGINE_SRC)
+    libs += ctx.build_lua()
 
-    lua_srcs = ctx.path.ant_glob("%s/*.c" % LUA_SRC, excl=map(lambda x: "%s/%s" % (LUA_SRC, x), ["lua.c", "luac.c"]))
-    
-    ctx.stlib(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
-
-    libs += ["lua"]
-
+    # OSX-specific files
     if ctx.env["DEST_OS"] == "darwin":
-        ctx.objects(
-                features = "c",
-                source = sdl_main,
-                target="sdlmain",
-                use=["SDL", "COCOA"]
-                )
+        src += [sdl_main]
+        libs += ["COCOA", "SDL", "OPENGL"]
 
-        libs += ["COCOA", "sdlmain"]
+    src += ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
 
     ctx.program(
-            source = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC),
+            features = "c cxx",
+            source = src,
             target = "rocketdemo",
-            includes = INCLUDE,
+            includes = incls,
             use = libs,
             )
-
-    ctx(rule="cp ${SRC} ${TGT}", source="%s/test.lua" % ENGINE_SRC, target="test.lua", always=True)

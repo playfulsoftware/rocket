@@ -6,8 +6,9 @@ build = "build"
 import os
 import subprocess
 
-from waflib.Configure import conf
 from waflib import TaskGen
+from waflib.Configure import conf
+from waflib.Task import Task, RUN_ME, SKIP_ME
 
 @TaskGen.extension(".m")
 def m_hook(self, node):
@@ -84,6 +85,7 @@ def configure(ctx):
     if ctx.env["DEST_OS"] == "darwin":
         # SDL on OSX needs these frameworks
         ctx.env.FRAMEWORK_SDL = "SDL"
+        ctx.env.FRAMEWORK_SDL2 = "SDL2"
         ctx.env.FRAMEWORK_COCOA = "Cocoa"
         ctx.env.FRAMEWORK_OPENGL = "OpenGL"
     else:
@@ -95,6 +97,28 @@ def build_lua(ctx):
     ctx.stlib(features = "c", source = lua_srcs, target="lua", use=["lua_deps"])
     return ["lua"]
 
+class SDL2Builder(Task):
+
+    def work_dir(self):
+        return os.path.join(self.env["DEP_SDL2_PATH"], "Xcode", "SDL")
+
+    def build_dir(self):
+        return os.path.join(self.work_dir(), "build", "Release")
+
+    def framework_path(self):
+        return os.path.join(self.build_dir(), "SDL2.framework")
+
+    def runnable_status(self):
+        if os.path.exists(self.framework_path()):
+            return SKIP_ME
+        else:
+            return RUN_ME
+
+    def run(self):
+        if self.env["DEST_OS"] is "darwin":
+            print ("Building SDL Framework" )
+            self.exec_command(["xcodebuild", "-configuration", "Release"], cwd=self.work_dir())
+
 
 def build(ctx):
 
@@ -104,10 +128,13 @@ def build(ctx):
 
     libs += ctx.build_lua()
 
+
     # OSX-specific files
     if ctx.env["DEST_OS"] == "darwin":
+        sdl_build = SDL2Builder(env=ctx.env)
         src += [sdl_main]
-        libs += ["COCOA", "SDL", "OPENGL"]
+        libs += ["COCOA", "SDL", "SDL2", "OPENGL"]
+        ctx.env.FRAMEWORKPATH_SDL2 = sdl_build.build_dir()
 
     src += ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
 

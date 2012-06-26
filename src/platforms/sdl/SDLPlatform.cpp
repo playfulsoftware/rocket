@@ -1,7 +1,8 @@
 // SDLPlatform.cpp
 // Copyright 2012 Playful Software
 
-#include <SDL/SDL.h>
+#define GL3_PROTOTYPES
+#include <OpenGL/gl3.h>
 
 #include "platforms/sdl/SDLPlatform.h"
 
@@ -17,6 +18,8 @@ SDLPlatform::SDLPlatform() :
 }
 
 SDLPlatform::~SDLPlatform() {
+    SDL_GL_DeleteContext(context);
+    SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
@@ -24,22 +27,27 @@ void SDLPlatform::createWindow(int width, int height) {
 
     // TODO:: Move the OpenGL specific code out into more appropriate place.
     // define the GL settings
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    int flags = SDL_OPENGL;
-
     // initialize the window
-    const SDL_VideoInfo* info = SDL_GetVideoInfo();
+    window = SDL_CreateWindow("Rocket Engine Demo", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
-    if (SDL_SetVideoMode(width, height, info->vfmt->BitsPerPixel, flags) == 0)
+    if (window == NULL)
     {
         // bail
         exit(1);
     }
+
+    context = SDL_GL_CreateContext(window);
+
+    SDL_GL_SetSwapInterval(1);
 }
 
 void SDLPlatform::emit(const char* name, const Rocket::Events::EventArgs &e) {

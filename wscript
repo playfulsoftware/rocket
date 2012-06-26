@@ -26,16 +26,16 @@ SUPPORT_DIR = "support"
 LUA_DIR = "%s/lua-5.2.1" % DEPS_DIR
 LUA_SRC = "%s/src" % LUA_DIR
 
-SDL_OSX_DIR = "%s/sdl1.3_osx" % SUPPORT_DIR
-
-sdl_main = "%s/SDLMain.m" % SDL_OSX_DIR
-
 INCLUDE = [ENGINE_SRC, LUA_SRC]
 
 REPOS = {
         "sdl2": {
             "type": "hg",
             "url": "http://hg.libsdl.org/SDL"
+        },
+        "libuv": {
+            "type": "git",
+            "url": "https://github.com/joyent/libuv.git"
         }
 }
 
@@ -84,7 +84,6 @@ def configure(ctx):
 
     if ctx.env["DEST_OS"] == "darwin":
         # SDL on OSX needs these frameworks
-        ctx.env.FRAMEWORK_SDL = "SDL"
         ctx.env.FRAMEWORK_SDL2 = "SDL2"
         ctx.env.FRAMEWORK_COCOA = "Cocoa"
         ctx.env.FRAMEWORK_OPENGL = "OpenGL"
@@ -132,8 +131,9 @@ def build(ctx):
     # OSX-specific files
     if ctx.env["DEST_OS"] == "darwin":
         sdl_build = SDL2Builder(env=ctx.env)
-        src += [sdl_main]
-        libs += ["COCOA", "SDL", "SDL2", "OPENGL"]
+        ctx.add_to_group(sdl_build)
+        incls += [os.path.join(ctx.env["DEP_SDL2_PATH"], "include")]
+        libs += ["COCOA", "SDL2", "OPENGL"]
         ctx.env.FRAMEWORKPATH_SDL2 = sdl_build.build_dir()
 
     src += ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)

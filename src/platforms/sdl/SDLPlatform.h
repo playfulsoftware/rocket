@@ -8,6 +8,8 @@
 #include <map>
 #include <string>
 
+#include <SDL.h>
+
 #include "events/EventArgs.h"
 #include "events/EventEmitter.h"
 
@@ -41,6 +43,8 @@ class SDLPlatform : public Rocket::Events::EventEmitter {
         void emit(const char* name, const Rocket::Events::EventArgs& e);
 
         bool isRunning;
+        SDL_Window* window;
+        SDL_GLContext context;
 
         std::map< std::string, std::deque<Rocket::Events::EventHandler> > events;
 

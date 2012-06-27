@@ -12,22 +12,25 @@ import sys
 import tarfile
 import urllib2
 
-DEPS_DIR = "deps"
+DEPS_DIR = os.path.abspath("deps")
 PKGS = {
         "waf": {
             "type": "tarball",
+            "buildable": False,
             "url": "http://waf.googlecode.com/files/waf-%(version)s.tar.bz2",
             "version": "1.6.11"
         },
         "lua": {
             "type": "tarball",
+            "nested": True,
             "url": "http://www.lua.org/ftp/lua-%(version)s.tar.gz",
             "version": "5.2.1"
         },
         "sdl2": {
             "type": "hg",
             "url": "http://hg.libsdl.org/SDL",
-            "version": "hg"
+            "version": "hg",
+            "build_dir": "./sdl_build"
         },
         "libuv": {
             "type": "git",
@@ -49,8 +52,19 @@ class DependencyBuilder(object):
         if not self.exists():
             getattr(self, "download_%s" % self.info["type"])()
 
+        if self.info.get("buildable", True) and self.configure():
+            self.build()
+
     def pkg_path(self):
-        return os.path.join(DEPS_DIR, "%s-%s" % (self.pkg, self.info["version"]))
+        nested = self.info.get("nested", False)
+        if not nested:
+            return os.path.join(DEPS_DIR, "%s-%s" % (self.pkg, self.info["version"]))
+        else:
+            name_ver = "%s-%s" % (self.pkg, self.info["version"])
+            if nested is True:
+                return os.path.join(DEPS_DIR, name_ver, name_ver)
+            else:
+                return os.path.join(DEPS_DIR, name_ver, nested)
 
     def pkg_url(self):
         return self.info["url"] % self.info
@@ -72,6 +86,41 @@ class DependencyBuilder(object):
 
     def exists(self):
         return os.path.exists(self.pkg_path())
+
+    def build_dir(self):
+        bd = os.path.join(self.pkg_path(), self.info.get("build_dir", "."))
+        if not os.path.exists(bd):
+            os.makedirs(bd)
+        return bd
+
+    def build(self):
+        print ("building %s" % self.pkg)
+        old_dir = os.getcwd()
+        os.chdir(self.build_dir())
+        success = subprocess.call(["make"])
+        os.chdir(old_dir)
+        return success
+
+    def configure(self):
+        success = True
+        print ("configuring %s" % self.pkg)
+        if os.path.exists("%s/Makefile" % self.build_dir()):
+            #print ("No configuration needed, Makefile already exists")
+            return success
+        else:
+            print ("changing to %s" % self.build_dir())
+            old_dir = os.getcwd()
+            os.chdir(self.build_dir())
+            config_path = os.path.join(self.pkg_path(), "configure")
+            if os.path.exists(config_path):
+                print ("running %s" % config_path)
+                sucess = subprocess.call([os.path.join(self.pkg_path(), "configure")]) == 0
+            else:
+                print ("unable to build lua: no configure/makefile found")
+                success = False
+
+            os.chdir(old_dir)
+        return success
 
 def grab_tarball(dir_path, url):
     urlObj = urllib2.urlopen(url)

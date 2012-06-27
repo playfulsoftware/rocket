@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# configure -- Configuration bootstrap script for the Rocket engine.
+# bootstrap -- Bootstrap script for the Rocket engine.
 # this script downloads and builds a copy of waf, which is then used by the rest of the build process.
 
 import bz2
@@ -15,17 +15,63 @@ import urllib2
 DEPS_DIR = "deps"
 PKGS = {
         "waf": {
+            "type": "tarball",
             "url": "http://waf.googlecode.com/files/waf-%(version)s.tar.bz2",
             "version": "1.6.11"
         },
         "lua": {
+            "type": "tarball",
             "url": "http://www.lua.org/ftp/lua-%(version)s.tar.gz",
             "version": "5.2.1"
+        },
+        "sdl2": {
+            "type": "hg",
+            "url": "http://hg.libsdl.org/SDL",
+            "version": "hg"
+        },
+        "libuv": {
+            "type": "git",
+            "url": "https://github.com/joyent/libuv.git",
+            "version": "git"
         }
+
 }
 
 WAF_BUILD_CMD = ["python", "waf-light"]
 WAF_TOOLS = ["compat15", "msvs", "xcode"]
+
+class DependencyBuilder(object):
+
+    def __init__(self, pkg, info):
+        self.pkg = pkg
+        self.info = info
+
+        if not self.exists():
+            getattr(self, "download_%s" % self.info["type"])()
+
+    def pkg_path(self):
+        return os.path.join(DEPS_DIR, "%s-%s" % (self.pkg, self.info["version"]))
+
+    def pkg_url(self):
+        return self.info["url"] % self.info
+
+    def download_tarball(self):
+        print ("downloading tarball for %s" % self.pkg)
+        urlObj = urllib2.urlopen(self.pkg_url())
+        fileObj = StringIO.StringIO(urlObj.read())
+        tarball = tarfile.open(None, "r", fileObj)
+        tarball.extractall(self.pkg_path())
+
+    def download_git(self):
+        print ("cloning from git for %s" % self.pkg)
+        subprocess.call(["git", "clone", self.pkg_url(), self.pkg_path()])
+
+    def download_hg(self):
+        print ("cloning from hg for %s" % self.pkg)
+        subprocess.call(["hg", "clone", self.pkg_url(), self.pkg_path()])
+
+    def exists(self):
+        return os.path.exists(self.pkg_path())
 
 def grab_tarball(dir_path, url):
     urlObj = urllib2.urlopen(url)
@@ -50,14 +96,8 @@ def build_waf(waf_dir):
 def main():
     if not os.path.exists(DEPS_DIR): os.mkdir(DEPS_DIR)
     for pkg, pkg_info in PKGS.items():
-        pkg_str = "%s v%s" % (pkg, pkg_info["version"])
-        print "Checking for %s" % pkg_str
-        if os.path.exists(os.path.join(DEPS_DIR, "%s-%s" % (pkg, pkg_info["version"]))):
-            print "%s up to date" % pkg_str
-        else:
-            print "Downloading %s v%s" % (pkg, pkg_info["version"])
-            grab_tarball(DEPS_DIR, pkg_info["url"] % pkg_info)
-
+        DependencyBuilder(pkg, pkg_info)
+        
     # build the waf package
     if not os.path.exists("waf"):
         print "building waf binary"

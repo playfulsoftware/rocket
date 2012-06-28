@@ -22,6 +22,7 @@ PKGS = {
         },
         "lua": {
             "type": "tarball",
+            "make_args": ["macosx"] # need to make this cross-platform
             "nested": True,
             "url": "http://www.lua.org/ftp/lua-%(version)s.tar.gz",
             "version": "5.2.1"
@@ -97,7 +98,7 @@ class DependencyBuilder(object):
         print ("building %s" % self.pkg)
         old_dir = os.getcwd()
         os.chdir(self.build_dir())
-        success = subprocess.call(["make"])
+        success = subprocess.call(["make"] + self.info.get("make_args", []))
         os.chdir(old_dir)
         return success
 

@@ -30,32 +30,23 @@ def configure(ctx):
 
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
 
-    # lua lib info
-    ctx.env.STLIB_LUA = "lua"
-    ctx.env.STLIBPATH_LUA = os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")
-    ctx.env.INCLUDES_LUA = ctx.env.STLIBPATH_LUA
-
-    # sdl2 lib info
-    ctx.env.LIB_SDL2 = "SDL2"
-    sdl2_path = os.path.join(DEPS_DIR, "sdl2-hg")
-    ctx.env.LIBPATH_SDL2 = os.path.join(sdl2_path, "sdl_build", "build", ".libs")
-    ctx.env.INCLUDES_SDL2 = os.path.join(sdl2_path, "include")
-
-    # libuv lib info
-    ctx.env.STLIB_UV = "uv"
-    ctx.env.STLIBPATH_UV = os.path.join(DEPS_DIR, "libuv-git")
-    ctx.env.INCLUDES_UV = os.path.join(ctx.env.STLIBPATH_UV, "include")
-
     ctx.env.FRAMEWORK_OPENGL = "OpenGL"
 
 
 def build(ctx):
 
-    src = []
-    incls = [ENGINE_SRC]
-    libs = ["LUA", "SDL2", "UV", "OPENGL"]
 
-    src += ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
+    ctx.read_stlib("uv", [os.path.join(DEPS_DIR, "libuv-git")])
+    ctx.read_stlib("lua", [os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")])
+    ctx.read_stlib("SDL2", [os.path.join(DEPS_DIR, "sdl2-hg", "sdl_build", "build", ".libs")])
+
+    incls = [ENGINE_SRC]
+    incls += [os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")]
+    incls += [os.path.join(DEPS_DIR, "sdl2-hg", "include")]
+
+    libs = ["lua", "SDL2", "uv", "OPENGL"]
+
+    src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
 
     ctx.program(
             features = "c cxx",
@@ -63,4 +54,5 @@ def build(ctx):
             target = "rocketdemo",
             includes = incls,
             use = libs,
+            mac_app = True
             )

@@ -22,23 +22,11 @@ PKGS = {
         },
         "lua": {
             "type": "tarball",
-            "make_args": ["macosx"] # need to make this cross-platform
+            "make_args": ["macosx"], # need to make this cross-platform
             "nested": True,
             "url": "http://www.lua.org/ftp/lua-%(version)s.tar.gz",
             "version": "5.2.1"
         },
-        "sdl2": {
-            "type": "hg",
-            "url": "http://hg.libsdl.org/SDL",
-            "version": "hg",
-            "build_dir": "./sdl_build"
-        },
-        "libuv": {
-            "type": "git",
-            "url": "https://github.com/joyent/libuv.git",
-            "version": "git"
-        }
-
 }
 
 WAF_BUILD_CMD = ["python", "waf-light"]
@@ -75,7 +63,7 @@ class DependencyBuilder(object):
         urlObj = urllib2.urlopen(self.pkg_url())
         fileObj = StringIO.StringIO(urlObj.read())
         tarball = tarfile.open(None, "r", fileObj)
-        tarball.extractall(self.pkg_path())
+        tarball.extractall(os.path.join(DEPS_DIR, "%s-%s" % (self.pkg, self.info["version"])))
 
     def download_git(self):
         print ("cloning from git for %s" % self.pkg)

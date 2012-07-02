@@ -30,21 +30,14 @@ def configure(ctx):
 
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
 
-    ctx.env.FRAMEWORK_OPENGL = "OpenGL"
-
-
 def build(ctx):
 
-
-    ctx.read_stlib("uv", [os.path.join(DEPS_DIR, "libuv-git")])
     ctx.read_stlib("lua", [os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")])
-    ctx.read_stlib("SDL2", [os.path.join(DEPS_DIR, "sdl2-hg", "sdl_build", "build", ".libs")])
 
     incls = [ENGINE_SRC]
     incls += [os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")]
-    incls += [os.path.join(DEPS_DIR, "sdl2-hg", "include")]
 
-    libs = ["lua", "SDL2", "uv", "OPENGL"]
+    libs = ["lua"]
 
     src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
 

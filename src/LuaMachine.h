@@ -1,8 +1,8 @@
-// LuaInstance.h
+// LuaMachine.h
 // Copyright 2012 PlayfulSoftware
 
-#ifndef ROCKET_SCRIPTING_LUAINSTANCE_H
-#define ROCKET_SCRIPTING_LUAINSTANCE_H
+#ifndef ROCKET_LUAMACHINE_H
+#define ROCKET_LUAMACHINE_H
 
 #include <map>
 #include <string>
@@ -10,9 +10,8 @@
 #include <lua.hpp>
 
 namespace Rocket {
-namespace Scripting {
 
-class LuaInstance {
+class LuaMachine {
 
     public:
 
@@ -34,11 +33,11 @@ class LuaInstance {
 
         const static LuaObjectRef INVALID_REF = LUA_NOREF;
 
-        LuaInstance();
+        LuaMachine();
 
-        ~LuaInstance();
+        ~LuaMachine();
 
-        bool runBuffer(const char* buffer);
+        bool loadBuffer(const char* buffer);
 
         bool getGlobalValue(const char* name, int* value);
         bool getGlobalValue(const char* name, long* value);
@@ -61,13 +60,13 @@ class LuaInstance {
 
     private:
         // make instances non-copyable
-        LuaInstance(const LuaInstance& other);
-        LuaInstance& operator=(const LuaInstance& other);
+        LuaMachine(const LuaMachine& other);
+        LuaMachine& operator=(const LuaMachine& other);
 
         lua_State* vmState;
 
         // private function to get a reference to the class instance via the lua environment.
-        static LuaInstance* getVMSelf(lua_State* L);
+        static LuaMachine* getVMSelf(lua_State* L);
 
         // builtin lua functions
 
@@ -79,7 +78,6 @@ class LuaInstance {
 
 };
 
-} // Scripting
 } // Rocket
 
-#endif //ROCKET_SCRIPTING_LUAINSTANCE_H
+#endif //ROCKET_LUAMACHINE_H

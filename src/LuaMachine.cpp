@@ -2,18 +2,17 @@
 #include <string.h>
 #include <iostream>
 
-#include "scripting/LuaInstance.h"
+#include "LuaMachine.h"
 
 static int luaNoOp(lua_State* L) {
     return 0;
 }
 
 namespace Rocket {
-namespace Scripting {
 
 // public methods
 
-LuaInstance::LuaInstance() {
+LuaMachine::LuaMachine() {
 
     vmState = luaL_newstate();
     //luaL_openlibs(vmState);
@@ -35,16 +34,16 @@ LuaInstance::LuaInstance() {
     lua_setglobal(vmState, "module");
 }
 
-LuaInstance::~LuaInstance() {
+LuaMachine::~LuaMachine() {
     lua_close(vmState);
 }
 
 
-bool LuaInstance::runBuffer(const char* buffer) {
+bool LuaMachine::loadBuffer(const char* buffer) {
     return luaL_dostring(vmState, buffer) == 0;
 }
 
-bool LuaInstance::getGlobalValue(const char* name, int* value) {
+bool LuaMachine::getGlobalValue(const char* name, int* value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -56,7 +55,7 @@ bool LuaInstance::getGlobalValue(const char* name, int* value) {
     }
 }
 
-bool LuaInstance::getGlobalValue(const char* name, long* value) {
+bool LuaMachine::getGlobalValue(const char* name, long* value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -68,7 +67,7 @@ bool LuaInstance::getGlobalValue(const char* name, long* value) {
     }
 }
 
-bool LuaInstance::getGlobalValue(const char* name, float* value) {
+bool LuaMachine::getGlobalValue(const char* name, float* value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -80,7 +79,7 @@ bool LuaInstance::getGlobalValue(const char* name, float* value) {
     }
 }
 
-bool LuaInstance::getGlobalValue(const char* name, double* value) {
+bool LuaMachine::getGlobalValue(const char* name, double* value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -92,7 +91,7 @@ bool LuaInstance::getGlobalValue(const char* name, double* value) {
     }
 }
 
-bool LuaInstance::getGlobalValue(const char* name, bool* value) {
+bool LuaMachine::getGlobalValue(const char* name, bool* value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -104,7 +103,7 @@ bool LuaInstance::getGlobalValue(const char* name, bool* value) {
     }
 }
 
-bool LuaInstance::getGlobalValue(const char* name, char** value) {
+bool LuaMachine::getGlobalValue(const char* name, char** value) {
 
     lua_getglobal(vmState, name);
     if (lua_isnil(vmState, -1)) {
@@ -117,37 +116,37 @@ bool LuaInstance::getGlobalValue(const char* name, char** value) {
     }
 }
 
-void LuaInstance::setGlobalValue(const char* name, int value) {
+void LuaMachine::setGlobalValue(const char* name, int value) {
     lua_pushinteger(vmState, value);
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::setGlobalValue(const char* name, long value) {
+void LuaMachine::setGlobalValue(const char* name, long value) {
     lua_pushinteger(vmState, value);
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::setGlobalValue(const char* name, float value) {
+void LuaMachine::setGlobalValue(const char* name, float value) {
     lua_pushnumber(vmState, value);
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::setGlobalValue(const char* name, double value) {
+void LuaMachine::setGlobalValue(const char* name, double value) {
     lua_pushnumber(vmState, value);
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::setGlobalValue(const char* name, bool value) {
+void LuaMachine::setGlobalValue(const char* name, bool value) {
     lua_pushboolean(vmState, value);
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::setGlobalValue(const char* name, const char* value) {
+void LuaMachine::setGlobalValue(const char* name, const char* value) {
     lua_pushlstring(vmState, value, strlen(value));
     lua_setglobal(vmState, name);
 }
 
-void LuaInstance::DeleteGlobal(const char* name) {
+void LuaMachine::DeleteGlobal(const char* name) {
     lua_pushnil(vmState);
     lua_setglobal(vmState, name);
 }
@@ -155,16 +154,16 @@ void LuaInstance::DeleteGlobal(const char* name) {
 
 // private methods
 
-LuaInstance* LuaInstance::getVMSelf(lua_State* L) {
+LuaMachine* LuaMachine::getVMSelf(lua_State* L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "vmState");
-    LuaInstance* self = (LuaInstance*) lua_touserdata(L, -1);
+    LuaMachine* self = (LuaMachine*) lua_touserdata(L, -1);
     lua_pop(L, 1);
     return self;
 }
 
 // private static methods, aka lua hooks.
 
-int LuaInstance::luaTrace(lua_State* L) {
+int LuaMachine::luaTrace(lua_State* L) {
     int nargs = lua_gettop(L);
 
     if (nargs == 0) {
@@ -180,14 +179,13 @@ int LuaInstance::luaTrace(lua_State* L) {
     }
 }
 
-int LuaInstance::luaRequire(lua_State* L) {
+int LuaMachine::luaRequire(lua_State* L) {
     return 0;
 }
 
-int LuaInstance::luaModule(lua_State* L) {
+int LuaMachine::luaModule(lua_State* L) {
     return 0;
 }
 
 
-} // Scripting
 } // Rocket

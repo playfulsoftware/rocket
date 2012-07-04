@@ -1,9 +1,8 @@
 # Rocket Tasks
 
 ## Multi-Platform Support
-1. Add SDL Support -- Cary Started
 1. Add Native Windows Support
-1. Add Native OSX Support
+1. Add Native OSX Support -- Cary Started
 1. Add Native Linux Support
 1. Add Android Support
 1. Add iOS Support
@@ -17,6 +16,12 @@
 1. Add Software Raster Support
 1. Add Software Raytracing Support
 1. Add "Headless", aka Server support for running without an active display.
+
+## Event Support
+1. Add Kqueue-Based Event Dispatcher -- Cary Complete
+
+## Rendering Graph Support
+1. Add Lua-Based Graph Parser
 
 ## Scripting Support
 1. Add Basic Global Lua Interpreter Support -- Cary Complete
@@ -33,9 +38,6 @@
 
 ## Unit Testing Support
 1. Add GoogleTest Support
-
-## Network Support
-1. Add libuv Support
 
 ## Asset Support
 1. Add 3D Mesh Support

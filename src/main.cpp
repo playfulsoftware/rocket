@@ -7,14 +7,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <deque>
+#include <map>
 #include <queue>
+#include <string>
 #include <vector>
 
 #include "fastdelegate.h"
 
+#include "events/EventEmitter.h"
+
 #define MAX_EVENTS_PER_TICK 10
 
-class KQueueEventDispatcher {
+class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
     public:
         KQueueEventDispatcher() {
             // create the event queue
@@ -30,9 +35,27 @@ class KQueueEventDispatcher {
             close(writeFd);
         }
 
+        void emit(const char* name, void* e) {
+            if (events.find(name) != events.end()) {
+                std::deque<Rocket::Events::EventHandler>::const_iterator i = events[name].begin();
+                for (i; i != events[name].end(); ++i) {
+                    (*i)(e);
+                }
+            }
+        }
+
+        virtual void on(const char* name, const Rocket::Events::EventHandler& handler) {
+            if (events.find(name) == events.end()) {
+                std::deque<Rocket::Events::EventHandler> handlers;
+                events[name] = handlers;
+            }
+            events[name].push_back(handler);
+        }
+
         void run() {
             struct kevent events[MAX_EVENTS_PER_TICK];
-            int num_events, tickCount;
+            int num_events = 0;
+            size_t tickCount;
 
             tickCount = 0;
 
@@ -47,7 +70,7 @@ class KQueueEventDispatcher {
                         switch(events[i].filter) {
                             case EVFILT_TIMER:
                                 if (events[i].ident == 1) { // core timer
-                                    printf("timer tick %d\n", tickCount++);
+                                    emit("onTick", (void*)tickCount);
                                 }
                                 break;
                             default:
@@ -55,15 +78,20 @@ class KQueueEventDispatcher {
                         }
                     }
                 }
+                tickCount++;
             }
         }
 
 
     private:
+        typedef std::map< std::string, std::deque< Rocket::Events::EventHandler > > EventMap;
+
         int eventFd;
         int readFd, writeFd;
 
         struct kevent timer;
+
+        EventMap events;
 
         void setupEventPipe() {
             // create the event source / sink descriptors
@@ -148,7 +176,6 @@ class PthreadThreadPool {
                 if (pool->workList.empty()) {
                     usleep(10);
                 } else {
-                    // TODO:: synchronize work queue with condition variable.
                     pthread_mutex_lock(&(pool->taskLock));
                     WorkItem work = pool->workList.front();
                     pool->workList.pop();
@@ -168,9 +195,15 @@ class PthreadThreadPool {
 
 };
 
+void printTicks(void* data) {
+    printf("timer tick %lu\n", (size_t)data);
+}
+
 int main(int argc, char** argv) {
 
     KQueueEventDispatcher ed;
+
+    ed.on("onTick", printTicks);
 
     ed.run();
 

@@ -19,6 +19,17 @@
 
 #define MAX_EVENTS_PER_TICK 10
 
+#define EVENT_SIZE 256
+
+typedef enum {
+    MESSAGE_EVENT
+} EventType;
+
+typedef struct _Event {
+    EventType type;
+    void* data[EVENT_SIZE - sizeof(EventType)];
+} Event;
+
 class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
     public:
         KQueueEventDispatcher() {
@@ -73,6 +84,20 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
                                     emit("onTick", (void*)tickCount);
                                 }
                                 break;
+                            case EVFILT_READ:
+                                if (events[i].ident == readFd) { // there are pending events
+                                    size_t pending = events[i].data;
+                                    Event evt;
+                                    while (pending >= EVENT_SIZE) {
+                                        ssize_t bytes = read(readFd, &evt, sizeof(Event));
+                                        if (bytes < sizeof(Event)) {
+                                            printf("Error reading event.. partial read.");
+                                        } else {
+                                            emit("onEvent", &evt);
+                                        }
+                                    }
+                                }
+                                break;
                             default:
                                 break;
                         }
@@ -82,6 +107,10 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
             }
         }
 
+        void sendEvent(const Event* evt) {
+            write(writeFd, evt, sizeof(evt));
+        }
+
 
     private:
         typedef std::map< std::string, std::deque< Rocket::Events::EventHandler > > EventMap;
@@ -89,7 +118,7 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
         int eventFd;
         int readFd, writeFd;
 
-        struct kevent timer;
+        struct kevent timer, evtSink;
 
         EventMap events;
 
@@ -99,6 +128,10 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
             pipe(pipeFds);
             readFd = pipeFds[0];
             writeFd = pipeFds[1];
+
+            EV_SET(&evtSink, readFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
+            struct timespec ts = {0, 0};
+            kevent(eventFd, &evtSink, 1, NULL, 0, &ts);
         }
 
         void setupTimer() {
@@ -111,11 +144,16 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
 
 };
 
-typedef fastdelegate::FastDelegate<void (void)> WorkItem;
+typedef fastdelegate::FastDelegate<void (void *)> WorkFunc;
 
 class PthreadThreadPool {
 
     public:
+        struct WorkItem {
+            WorkFunc func;
+            void* data;
+        };
+
         struct WorkerThread {
             pthread_t threadId;
         };
@@ -146,6 +184,13 @@ class PthreadThreadPool {
                 // wait for the pooled threads to finish..
                 pthread_join((*i)->threadId, NULL);
             }
+        }
+
+        void queueTask(WorkFunc func, void* data) {
+            struct WorkItem item;
+            item.func = func;
+            item.data = data;
+            queueTask(item);
         }
 
         void queueTask(WorkItem work) {
@@ -180,7 +225,7 @@ class PthreadThreadPool {
                     WorkItem work = pool->workList.front();
                     pool->workList.pop();
                     pthread_mutex_unlock(&(pool->taskLock));
-                    work();
+                    work.func(work.data);
                 }
             }
             return NULL;
@@ -197,6 +242,17 @@ class PthreadThreadPool {
 
 void printTicks(void* data) {
     printf("timer tick %lu\n", (size_t)data);
+}
+
+
+void waitAndPing(void* data) {
+    KQueueEventDispatcher* ed = (KQueueEventDispatcher*)data;
+
+    sleep(5);
+
+    Event evt_data; 
+
+    ed->sendEvent(&evt_data);
 }
 
 int main(int argc, char** argv) {

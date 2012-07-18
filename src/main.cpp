@@ -19,15 +19,14 @@
 
 #define MAX_EVENTS_PER_TICK 10
 
-#define EVENT_SIZE 256
-
 typedef enum {
     MESSAGE_EVENT
 } EventType;
 
 typedef struct _Event {
     EventType type;
-    void* data[EVENT_SIZE - sizeof(EventType)];
+    uint32_t size;
+    void* data;
 } Event;
 
 class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
@@ -45,6 +44,8 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
             close(readFd);
             close(writeFd);
         }
+
+        static KQueueEventDispatcher* getEventDispatcher();
 
         void emit(const char* name, void* e) {
             if (events.find(name) != events.end()) {
@@ -88,7 +89,7 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
                                 if (events[i].ident == readFd) { // there are pending events
                                     size_t pending = events[i].data;
                                     Event evt;
-                                    while (pending >= EVENT_SIZE) {
+                                    while (pending >= sizeof(Event)) {
                                         ssize_t bytes = read(readFd, &evt, sizeof(Event));
                                         if (bytes < sizeof(Event)) {
                                             printf("Error reading event.. partial read.");
@@ -113,6 +114,8 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
 
 
     private:
+        static KQueueEventDispatcher* global_instance;
+
         typedef std::map< std::string, std::deque< Rocket::Events::EventHandler > > EventMap;
 
         int eventFd;
@@ -143,6 +146,15 @@ class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
         }
 
 };
+
+KQueueEventDispatcher* KQueueEventDispatcher::global_instance = NULL;
+
+KQueueEventDispatcher* KQueueEventDispatcher::getEventDispatcher() {
+    if (global_instance == NULL) {
+        global_instance == new KQueueEventDispatcher;
+    }
+    return global_instance;
+}
 
 typedef fastdelegate::FastDelegate<void (void *)> WorkFunc;
 
@@ -257,11 +269,11 @@ void waitAndPing(void* data) {
 
 int main(int argc, char** argv) {
 
-    KQueueEventDispatcher ed;
+    KQueueEventDispatcher* ed = KQueueEventDispatcher::getEventDispatcher();
 
-    ed.on("onTick", printTicks);
+    ed->on("onTick", printTicks);
 
-    ed.run();
+    ed->run();
 
     return 0;
 }

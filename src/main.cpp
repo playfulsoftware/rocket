@@ -15,146 +15,8 @@
 
 #include "fastdelegate.h"
 
+#include "events/EventDispatcher.h"
 #include "events/EventEmitter.h"
-
-#define MAX_EVENTS_PER_TICK 10
-
-typedef enum {
-    MESSAGE_EVENT
-} EventType;
-
-typedef struct _Event {
-    EventType type;
-    uint32_t size;
-    void* data;
-} Event;
-
-class KQueueEventDispatcher : public Rocket::Events::EventEmitter {
-    public:
-        KQueueEventDispatcher() {
-            // create the event queue
-            eventFd = kqueue();
-
-            setupEventPipe();
-            setupTimer();
-        }
-
-        ~KQueueEventDispatcher() {
-            close(eventFd);
-            close(readFd);
-            close(writeFd);
-        }
-
-        static KQueueEventDispatcher* getEventDispatcher();
-
-        void emit(const char* name, void* e) {
-            if (events.find(name) != events.end()) {
-                std::deque<Rocket::Events::EventHandler>::const_iterator i = events[name].begin();
-                for (i; i != events[name].end(); ++i) {
-                    (*i)(e);
-                }
-            }
-        }
-
-        virtual void on(const char* name, const Rocket::Events::EventHandler& handler) {
-            if (events.find(name) == events.end()) {
-                std::deque<Rocket::Events::EventHandler> handlers;
-                events[name] = handlers;
-            }
-            events[name].push_back(handler);
-        }
-
-        void run() {
-            struct kevent events[MAX_EVENTS_PER_TICK];
-            int num_events = 0;
-            size_t tickCount;
-
-            tickCount = 0;
-
-            for(;;) {
-                num_events = kevent(eventFd, NULL, 0, events, MAX_EVENTS_PER_TICK, NULL);
-                if (num_events < 0) {
-                    perror("kevent");
-                }
-                else if (num_events > 0) {
-                    // process events
-                    for (int i = 0; i < num_events; i++) {
-                        switch(events[i].filter) {
-                            case EVFILT_TIMER:
-                                if (events[i].ident == 1) { // core timer
-                                    emit("onTick", (void*)tickCount);
-                                }
-                                break;
-                            case EVFILT_READ:
-                                if (events[i].ident == readFd) { // there are pending events
-                                    size_t pending = events[i].data;
-                                    Event evt;
-                                    while (pending >= sizeof(Event)) {
-                                        ssize_t bytes = read(readFd, &evt, sizeof(Event));
-                                        if (bytes < sizeof(Event)) {
-                                            printf("Error reading event.. partial read.");
-                                        } else {
-                                            emit("onEvent", &evt);
-                                        }
-                                    }
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-                tickCount++;
-            }
-        }
-
-        void sendEvent(const Event* evt) {
-            write(writeFd, evt, sizeof(evt));
-        }
-
-
-    private:
-        static KQueueEventDispatcher* global_instance;
-
-        typedef std::map< std::string, std::deque< Rocket::Events::EventHandler > > EventMap;
-
-        int eventFd;
-        int readFd, writeFd;
-
-        struct kevent timer, evtSink;
-
-        EventMap events;
-
-        void setupEventPipe() {
-            // create the event source / sink descriptors
-            int pipeFds[2] = {0, 0};
-            pipe(pipeFds);
-            readFd = pipeFds[0];
-            writeFd = pipeFds[1];
-
-            EV_SET(&evtSink, readFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
-            struct timespec ts = {0, 0};
-            kevent(eventFd, &evtSink, 1, NULL, 0, &ts);
-        }
-
-        void setupTimer() {
-            // initialize the Timer struct
-            EV_SET(&timer, 1, EVFILT_TIMER, EV_ADD | EV_ENABLE, 0, 16, 0);
-            // register the timer with the event queue
-            struct timespec ts = {0, 0};
-            kevent(eventFd, &timer, 1, NULL, 0, &ts);
-        }
-
-};
-
-KQueueEventDispatcher* KQueueEventDispatcher::global_instance = NULL;
-
-KQueueEventDispatcher* KQueueEventDispatcher::getEventDispatcher() {
-    if (global_instance == NULL) {
-        global_instance == new KQueueEventDispatcher;
-    }
-    return global_instance;
-}
 
 typedef fastdelegate::FastDelegate<void (void *)> WorkFunc;
 
@@ -258,21 +120,27 @@ void printTicks(void* data) {
 
 
 void waitAndPing(void* data) {
-    KQueueEventDispatcher* ed = (KQueueEventDispatcher*)data;
+    Rocket::EventDispatcher* ed = (Rocket::EventDispatcher*)data;
 
     sleep(5);
 
-    Event evt_data; 
+    Rocket::Events::Event evt_data; 
 
     ed->sendEvent(&evt_data);
 }
 
 int main(int argc, char** argv) {
+    printf("Getting Event Dispatcher\n");
+    Rocket::EventDispatcher* ed = Rocket::EventDispatcher::getEventDispatcher();
 
-    KQueueEventDispatcher* ed = KQueueEventDispatcher::getEventDispatcher();
+    if (ed == NULL) {
+        printf("Got a NULL Event Dispatcher\n");
+    }
 
+    printf("Registering Event\n");
     ed->on("onTick", printTicks);
 
+    printf("Running Event Dispatcher\n");
     ed->run();
 
     return 0;

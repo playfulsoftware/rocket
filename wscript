@@ -4,6 +4,7 @@ top = "."
 build = "build"
 
 import os
+import sys
 import subprocess
 
 from waflib import TaskGen
@@ -30,6 +31,12 @@ def configure(ctx):
 
     ctx.check(features="c cxx", cflags=["-Wall", "-Werror"])
 
+    ctx.env.DEFINES = []
+
+    if sys.platform == "darwin":
+        ctx.env.append_value("DEFINES", "USE_KQUEUE_EVENTS=1")
+        ctx.env.append_value("DEFINES", "USE_PTHREAD_THREADS=1")
+
 def build(ctx):
 
     ctx.read_stlib("lua", [os.path.join(DEPS_DIR, "lua-5.2.1", "lua-5.2.1", "src")])
@@ -39,12 +46,13 @@ def build(ctx):
 
     libs = ["lua"]
 
-    src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC)
+    src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC, excl="%s/platform")
 
     ctx.program(
             features = "c cxx",
             source = src,
             target = "rocketdemo",
+            defines = ctx.env.DEFINES,
             includes = incls,
             use = libs,
             mac_app = True

@@ -46,7 +46,10 @@ def build(ctx):
 
     libs = ["lua"]
 
-    src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC, excl="%s/platform")
+    src = ctx.path.ant_glob("%s/**/*.cpp" % ENGINE_SRC, excl="%s/platform/**/*.cpp" % ENGINE_SRC)
+
+    if sys.platform == "darwin":
+        src += ctx.path.ant_glob("%s/platform/kqueue/*.cpp" % ENGINE_SRC)
 
     ctx.program(
             features = "c cxx",
